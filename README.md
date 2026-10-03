@@ -2,6 +2,10 @@
 
 Simple, type-safe environment configuration for NestJS applications.
 
+[![npm version](https://img.shields.io/npm/v/%40neomaventures%2Fconfig)](https://www.npmjs.com/package/@neomaventures/config)
+[![CI](https://github.com/neomaventures/config/actions/workflows/ci.yml/badge.svg)](https://github.com/neomaventures/config/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## The Problem
 
 NestJS's built-in ConfigService adds unnecessary complexity:
