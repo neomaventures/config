@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "jest", "jest-extended"],
+    "paths": {
+      "fixtures/*": ["${configDir}/fixtures/*"]
+    }
+  },
+  "include": ["src/**/*", "fixtures/**/*"]
+}

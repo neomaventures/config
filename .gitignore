@@ -1,0 +1,12 @@
+node_modules
+dist
+*.tsbuildinfo
+
+# The env-loading specs need real files on disk to assert precedence, so these
+# are committed test fixtures holding dummy values. The fixture writes
+# `.env.<NODE_ENV>[.local]` at test time — those stay ignored.
+.env*
+!.env
+!.env.local
+!fixtures/env/.env.{node_env}
+!fixtures/env/.env.{node_env}.local
