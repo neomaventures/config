@@ -1,6 +1,6 @@
 {
   "name": "@neomaventures/config",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Simple, type-safe environment configuration for NestJS applications",
   "author": "Daniel Bruce",
   "repository": {
