@@ -6,11 +6,13 @@ import { Inject, Injectable, Optional } from "@nestjs/common"
  * @property loadEnv - If true, loads environment variables from .env files into process.env
  * @property strict - If true, throws an error when accessing undefined environment variables
  * @property coerce - If true, attempts to coerce environment variable types
+ * @property defaults - Fallback values keyed by environment variable name, used when the variable is unset or empty
  */
 export type ConfigOptions = {
   loadEnv: boolean
   strict: boolean
   coerce: boolean
+  defaults: Record<string, string>
 }
 
 /**
@@ -122,6 +124,16 @@ export class ConfigService<T extends Record<string, any>> {
         .replace(/([A-Z]+)([A-Z][a-z0-9]+)/g, "$1_$2")
         .toUpperCase()
 
+    // The first non-empty of the env var, its lowercase fallback and the
+    // default. Empty strings count as unset, so a blank `KEY=` placeholder
+    // falls through to the default and, failing that, the strict mode error.
+    const lookup = (envKey: string): string | undefined =>
+      [
+        process.env[envKey],
+        process.env[envKey.toLowerCase()],
+        options.defaults?.[envKey],
+      ].find((value) => value !== undefined && value !== "")
+
     const ignoredProperties = new Set([
       "then",
       "toJSON",
@@ -144,7 +156,7 @@ export class ConfigService<T extends Record<string, any>> {
         }
 
         const envKey = toEnvKey(prop)
-        const value = process.env[envKey] ?? process.env[envKey.toLowerCase()]
+        const value = lookup(envKey)
 
         if (value === undefined && options.strict) {
           throw new Error(
@@ -183,7 +195,7 @@ export class ConfigService<T extends Record<string, any>> {
         }
 
         const envKey = toEnvKey(prop)
-        const value = process.env[envKey] ?? process.env[envKey.toLowerCase()]
+        const value = lookup(envKey)
 
         return value !== undefined
       },

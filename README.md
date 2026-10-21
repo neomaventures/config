@@ -220,7 +220,7 @@ DATABASE_URL=postgres://localhost/myapp_prod_local  # This wins over other files
 
 ## Strict Mode
 
-Enable strict mode to throw errors when accessing undefined environment variables:
+Enable strict mode to throw errors when accessing environment variables that are unset or empty (and have no [default](#defaults)):
 
 ```typescript
 ConfigModule.forRoot({ strict: true })
@@ -295,6 +295,39 @@ export class FlexibleService {
 
 This pattern is especially useful for ecosystem packages that need to optionally integrate with other configuration while maintaining strict mode compatibility.
 
+The `in` check follows the same rules as access: it is `false` for an unset or empty variable, and `true` when a [default](#defaults) applies.
+
+## Defaults
+
+Provide fallback values for environment variables the app can run without setting:
+
+```typescript
+ConfigModule.forRoot({
+  strict: true,
+  defaults: {
+    LOG_LEVEL: "info",
+    PORT: "3000",
+  },
+})
+```
+
+A default behaves exactly like an environment variable defined in code:
+
+- **Keyed by the environment variable name** (`LOG_LEVEL`), not the property you access (`config.logLevel`).
+- **Strings only**, and coerced like any other value when `coerce` is on — `PORT: "3000"` reads as `3000`.
+- **Used when the variable is unset or empty.** A set value always wins.
+- **Satisfies strict mode.** Strict mode only throws for a variable that is unset or empty *and* has no default — so a defaulted variable is optional and everything else is required.
+
+```bash
+# .env.development
+LOG_LEVEL=debug   # → "debug" (set value beats the default)
+
+# .env.e2e
+LOG_LEVEL=        # → "info" (empty counts as unset, so the default applies)
+```
+
+Defaults belong to the app. Packages keep their own defaults in their module options rather than registering environment defaults.
+
 ## Type Coercion
 
 Enable automatic type conversion from environment variable strings to JavaScript primitives:
@@ -333,7 +366,7 @@ INVALID_CONFIG=NaN     # → NaN
 ```bash
 VERSION=007            # → "007" (leading zero preserved)
 SPACING=" 123 "        # → 123 (whitespace trimmed and converted)
-EMPTY_VAL=             # → "" (empty string preserved)
+EMPTY_VAL=             # → undefined (empty counts as unset)
 API_KEY=sk_test_123    # → "sk_test_123" (non-numeric stays string)
 ```
 
@@ -380,13 +413,15 @@ You can combine all options for a complete configuration solution:
 ConfigModule.forRoot({ 
   loadEnv: true,   // Load .env files
   strict: true,    // Throw on missing required vars
-  coerce: true     // Auto-convert types
+  coerce: true,    // Auto-convert types
+  defaults: { LOG_LEVEL: "info" } // Fallbacks for optional vars
 })
 ```
 
 This gives you:
 - **Environment file loading** with proper precedence
 - **Runtime validation** for required variables  
+- **Defaults** for optional variables
 - **Automatic type conversion** for primitives
 - **Type safety** with TypeScript interfaces
 

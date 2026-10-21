@@ -193,8 +193,12 @@ describe("ConfigService", () => {
             )
           })
 
-          it(`'envEmpty' should return string '' when process.env.ENV_EMPTY is set to ''`, () => {
-            expect(config.envEmpty).toBe("")
+          it("'envEmpty' should return undefined when process.env.ENV_EMPTY is set to ''", () => {
+            expect(config.envEmpty).toBeUndefined()
+          })
+
+          it("Checking for the existence of 'envEmpty' should return false when process.env.ENV_EMPTY is set to ''", () => {
+            expect("envEmpty" in config).toBeFalse()
           })
 
           it(`'envDecimal' should return string '${envDecimal}' when process.env.ENV_DECIMAL is set to '${envDecimal}'`, () => {
@@ -260,6 +264,12 @@ describe("ConfigService", () => {
 
       it(`Checking for the existence of '${notDefinedKey}' should return false when process.env.${notDefinedKey.toUpperCase()} is not set`, () => {
         expect(notDefinedKey in config).toBeFalse()
+      })
+
+      it("'envEmpty' should throw an error when process.env.ENV_EMPTY is set to ''", () => {
+        expect(() => config.envEmpty).toThrow(
+          "Strict mode error when accessing configuration property 'envEmpty'. ENV_EMPTY is not defined on process.env",
+        )
       })
 
       it("should not throw when only the lowercase env var is set", () => {
@@ -388,8 +398,8 @@ describe("ConfigService", () => {
       )
     })
 
-    it("should NOT coerce empty string and keep it as string", () => {
-      expect(config.envEmpty).toBe("")
+    it("should treat an empty string as unset rather than coercing it", () => {
+      expect(config.envEmpty).toBeUndefined()
     })
 
     it("should NOT coerce a whitespace-only string to 0 and keep it as string", () => {
@@ -426,6 +436,80 @@ describe("ConfigService", () => {
 
     it("should coerce 'undefined' into undefined (and not throw a strict mode error)", () => {
       expect(config.undefinedEnv).toBeUndefined()
+    })
+  })
+
+  describe("ConfigModule.forRoot({ defaults })", () => {
+    const defaultValue = faker.lorem.word()
+    const envValue = faker.lorem.word()
+
+    ;[false, true].forEach((strict) => {
+      describe(`Given strict: ${strict}`, () => {
+        let config: TypedConfig<{ [key: string]: string }>
+
+        beforeEach(async () => {
+          const app: TestingModule = await Test.createTestingModule({
+            imports: [
+              ConfigModule.forRoot({
+                strict,
+                defaults: { DEFAULTED_VALUE: defaultValue },
+              }),
+            ],
+          }).compile()
+
+          await app.init()
+
+          config = app.get(ConfigService)
+        })
+
+        it("'defaultedValue' should return the default when process.env.DEFAULTED_VALUE is not set", () => {
+          expect(config.defaultedValue).toBe(defaultValue)
+        })
+
+        it("'defaultedValue' should return the default when process.env.DEFAULTED_VALUE is set to ''", () => {
+          process.env.DEFAULTED_VALUE = ""
+          expect(config.defaultedValue).toBe(defaultValue)
+        })
+
+        it("'defaultedValue' should return process.env.DEFAULTED_VALUE over the default when it is set", () => {
+          process.env.DEFAULTED_VALUE = envValue
+          expect(config.defaultedValue).toBe(envValue)
+        })
+
+        it("Checking for the existence of 'defaultedValue' should return true when only the default is set", () => {
+          expect("defaultedValue" in config).toBeTrue()
+        })
+      })
+    })
+
+    describe("Given coerce: true", () => {
+      let config: TypedConfig<{
+        [key: string]: string | number | boolean | null | undefined
+      }>
+      const defaultInt = faker.number.int().toString()
+
+      beforeEach(async () => {
+        const app: TestingModule = await Test.createTestingModule({
+          imports: [
+            ConfigModule.forRoot({
+              coerce: true,
+              defaults: { DEFAULTED_BOOL: "true", DEFAULTED_INT: defaultInt },
+            }),
+          ],
+        }).compile()
+
+        await app.init()
+
+        config = app.get(ConfigService)
+      })
+
+      it("should coerce a 'true' default to the true boolean value", () => {
+        expect(config.defaultedBool).toBeTrue()
+      })
+
+      it(`should coerce a '${defaultInt}' default to ${Number(defaultInt)}`, () => {
+        expect(config.defaultedInt).toEqual(Number(defaultInt))
+      })
     })
   })
 })

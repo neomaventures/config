@@ -68,6 +68,7 @@ export class ConfigModule implements OnModuleInit {
     loadEnv = false,
     strict = false,
     coerce = false,
+    defaults = {},
   }: Partial<ConfigOptions> = {}): DynamicModule {
     if (loadEnv) {
       dotenv.config({
@@ -86,7 +87,10 @@ export class ConfigModule implements OnModuleInit {
       module: ConfigModule,
       providers: [
         ConfigService,
-        { provide: CONFIG_OPTIONS, useValue: { loadEnv, strict, coerce } },
+        {
+          provide: CONFIG_OPTIONS,
+          useValue: { loadEnv, strict, coerce, defaults },
+        },
         { provide: REGISTERED_VIA_FOR_ROOT, useValue: true },
       ],
       exports: [ConfigService],
